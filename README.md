@@ -63,10 +63,13 @@ http://localhost:8080
 ---
 
 ## Future Improvements
-[ ] PDF upload for CVs
-[ ] Save interview sessions
-[ ] Better UI for question selection
-[ ] Score history and feedback dashboard
+- [] PDF upload for CVs
+
+- [] Save interview sessions
+
+- [] Better UI for question selection
+
+- [] Score history and feedback dashboard
 
 ---
 
