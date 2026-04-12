@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Job Interview Coach</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Job Interview Coach</h1>
+    <p>Paste your CV and the job description to generate interview questions.</p>
+
+    <form th:action="@{/questions}" th:object="${interviewForm}" method="post">
+        <label for="cvText">CV Text</label>
+        <textarea id="cvText" th:field="*{cvText}" rows="12" required></textarea>
+
+        <label for="jobText">Job Description</label>
+        <textarea id="jobText" th:field="*{jobText}" rows="12" required></textarea>
+
+        <button type="submit">Generate Questions</button>
+    </form>
+</div>
+</body>
+</html>

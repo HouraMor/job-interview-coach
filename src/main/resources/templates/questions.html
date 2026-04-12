@@ -1,10 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Generated Questions</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
+<div class="container">
+    <h1>Generated Interview Questions</h1>
 
+    <div class="card">
+        <h2>Questions</h2>
+        <ol>
+            <li th:each="question : ${questions}" th:text="${question}"></li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h2>Answer One Question</h2>
+
+        <form th:action="@{/feedback}" method="post">
+            <input type="hidden" name="cvText" th:value="${cvText}">
+            <input type="hidden" name="jobText" th:value="${jobText}">
+
+            <label for="selectedQuestion">Select a question</label>
+            <select id="selectedQuestion" name="selectedQuestion" required>
+                <option th:each="question, iterStat : ${questions}"
+                        th:value="${question}"
+                        th:text="'Question ' + ${iterStat.count}">
+                </option>
+            </select>
+
+            <label for="userAnswer">Your Answer</label>
+            <textarea id="userAnswer" name="userAnswer" rows="10" required></textarea>
+
+            <button type="submit">Analyze Answer</button>
+        </form>
+    </div>
+</div>
 </body>
 </html>
