@@ -7,14 +7,28 @@
 <body>
 <div class="container">
     <h1>Job Interview Coach</h1>
-    <p>Paste your CV and the job description to generate interview questions.</p>
+    <p>Paste text or upload a text-based PDF for both your CV and the job description.</p>
 
-    <form th:action="@{/questions}" th:object="${interviewForm}" method="post">
-        <label for="cvText">CV Text</label>
-        <textarea id="cvText" th:field="*{cvText}" rows="12" required></textarea>
+    <p class="error-message" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></p>
 
-        <label for="jobText">Job Description</label>
-        <textarea id="jobText" th:field="*{jobText}" rows="12" required></textarea>
+    <form th:action="@{/questions}" th:object="${interviewForm}" method="post" enctype="multipart/form-data">
+        <label for="cvText">Paste CV Text (optional if uploading a PDF)</label>
+        <textarea id="cvText" th:field="*{cvText}" rows="12"></textarea>
+
+        <p>OR</p>
+
+        <label for="cvFile">Upload CV as PDF (optional if pasting text)</label>
+        <input id="cvFile" name="cvFile" type="file" accept=".pdf,application/pdf">
+        <p>Text-based PDFs only. Scanned PDFs requiring OCR are not supported.</p>
+
+        <label for="jobText">Paste Job Description (optional if uploading a PDF)</label>
+        <textarea id="jobText" th:field="*{jobText}" rows="12"></textarea>
+
+        <p>OR</p>
+
+        <label for="jobFile">Upload Job Description as PDF (optional if pasting text)</label>
+        <input id="jobFile" name="jobFile" type="file" accept=".pdf,application/pdf">
+        <p>Text-based PDFs only. Scanned PDFs requiring OCR are not supported.</p>
 
         <button type="submit">Generate Questions</button>
     </form>

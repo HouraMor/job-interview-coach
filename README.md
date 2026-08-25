@@ -4,12 +4,16 @@ A lightweight AI-powered web application that helps users prepare for interviews
 
 ## Features
 
-- Paste CV text and job description
+- Provide both the CV and job description as pasted text or text-based PDF uploads (scanned PDFs requiring OCR are not supported)
 - Generate tailored interview questions
 - Includes technical and role-specific questions
 - Submit your own answer to a selected question
 - Receive AI-generated feedback on your answer
 - Fallback dummy mode if no API key is configured
+
+## Security
+
+User-provided CVs, job descriptions, interview questions, and candidate answers are treated as untrusted LLM input. Prompts separate trusted instructions from delimited data and escape delimiter characters to reduce prompt-injection risk. This hardening does not guarantee complete protection against prompt injection.
 
 ## Tech Stack
 
@@ -63,8 +67,6 @@ http://localhost:8080
 ---
 
 ## Future Improvements
-- [ ] PDF upload for CVs
-
 - [ ] Save interview sessions
 
 - [ ] Better UI for question selection
@@ -72,4 +74,3 @@ http://localhost:8080
 - [ ] Score history and feedback dashboard
 
 ---
-

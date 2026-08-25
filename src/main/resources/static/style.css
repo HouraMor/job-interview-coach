@@ -15,6 +15,10 @@ h1, h2 {
     color: #1f2937;
 }
 
+.error-message {
+    color: #b91c1c;
+}
+
 .card {
     background: white;
     padding: 20px;
