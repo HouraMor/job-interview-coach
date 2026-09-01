@@ -55,6 +55,16 @@ docker compose down
 
 The named Docker volume is retained, so local database data persists across restarts. This Compose file starts PostgreSQL only; run the Spring Boot application from the host as described below.
 
+## Persistence Domain
+
+```text
+InterviewSession
+  -> InterviewQuestion
+       -> AnswerAttempt
+```
+
+The entities, Flyway schema, and Spring Data repositories are implemented. The current web flow does not save sessions yet, and a session history page is not implemented; those connections are left for the next task.
+
 ## Run Locally
 
 Make sure you have Java 17 installed.
