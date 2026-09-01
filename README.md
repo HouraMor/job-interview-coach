@@ -19,10 +19,41 @@ User-provided CVs, job descriptions, interview questions, and candidate answers 
 
 - Java 17
 - Spring Boot
+- Spring Data JPA
+- PostgreSQL
+- Flyway
 - Thymeleaf
 - Maven
 - Groq API
 - Docker
+
+## Local PostgreSQL Setup
+
+Start PostgreSQL with Docker Compose:
+
+```bash
+docker compose up -d postgres
+```
+
+The application reads its database connection from these environment variables. The defaults match the local Compose service:
+
+| Variable | Local default |
+| --- | --- |
+| `DB_HOST` | `localhost` |
+| `DB_PORT` | `5432` |
+| `DB_NAME` | `interview_coach` |
+| `DB_USER` | `interview_coach` |
+| `DB_PASSWORD` | `interview_coach` |
+
+These values are local development defaults only. Override them with environment variables for other environments.
+
+Stop PostgreSQL when finished:
+
+```bash
+docker compose down
+```
+
+The named Docker volume is retained, so local database data persists across restarts. This Compose file starts PostgreSQL only; run the Spring Boot application from the host as described below.
 
 ## Run Locally
 
@@ -33,17 +64,23 @@ Set your API key:
 ```bash
 export GROQ_API_KEY=your_key_here
 ```
+
 Start the application:
-```
+
+```bash
 ./mvnw spring-boot:run
 ```
+
 Open in browser:
-```
+
+```text
 http://localhost:8080
 ```
 ---
 
 ## Run with Docker
+
+The Compose file starts PostgreSQL only. A separately run application container must receive `DB_*` settings for a PostgreSQL host that is reachable from inside that container; its default `DB_HOST=localhost` will not reach the Compose service.
 
 Build the JAR:
 ```
@@ -57,7 +94,7 @@ docker build -t job-interview-coach .
 Run the container:
 
 ```
-docker run -p 8080:8080 -e GROQ_API_KEY=your_key_here job-interview-coach
+docker run -p 8080:8080 -e GROQ_API_KEY=your_key_here -e DB_HOST=reachable_postgres_host job-interview-coach
 ```
 
 Open in browser:

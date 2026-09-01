@@ -1,0 +1,2 @@
+-- Initial migration to verify Flyway setup.
+-- Interview domain tables will be added in a future task.
