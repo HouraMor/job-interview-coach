@@ -63,7 +63,7 @@ InterviewSession
        -> AnswerAttempt
 ```
 
-The entities, Flyway schema, and Spring Data repositories are implemented. The current web flow does not save sessions yet, and a session history page is not implemented; those connections are left for the next task.
+Generated questions are now saved as a new `InterviewSession` with ordered `InterviewQuestion` records. Answers and feedback are not persisted yet, and a session history page is not implemented.
 
 ## Run Locally
 
@@ -114,7 +114,7 @@ http://localhost:8080
 ---
 
 ## Future Improvements
-- [ ] Save interview sessions
+- [ ] Add an interview session history page
 
 - [ ] Better UI for question selection
 

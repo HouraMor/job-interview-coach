@@ -2,7 +2,9 @@ package com.houra.jobinterviewcoach.controller;
 
 import com.houra.jobinterviewcoach.model.FeedbackResult;
 import com.houra.jobinterviewcoach.model.InterviewForm;
+import com.houra.jobinterviewcoach.persistence.entity.InterviewSession;
 import com.houra.jobinterviewcoach.service.AiService;
+import com.houra.jobinterviewcoach.service.InterviewSessionService;
 import com.houra.jobinterviewcoach.service.PdfTextExtractor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,10 +18,16 @@ public class PageController {
 
     private final AiService aiService;
     private final PdfTextExtractor pdfTextExtractor;
+    private final InterviewSessionService interviewSessionService;
 
-    public PageController(AiService aiService, PdfTextExtractor pdfTextExtractor) {
+    public PageController(
+            AiService aiService,
+            PdfTextExtractor pdfTextExtractor,
+            InterviewSessionService interviewSessionService
+    ) {
         this.aiService = aiService;
         this.pdfTextExtractor = pdfTextExtractor;
+        this.interviewSessionService = interviewSessionService;
     }
 
     @GetMapping("/")
@@ -67,7 +75,9 @@ public class PageController {
                 cvText,
                 jobText
         );
+        InterviewSession session = interviewSessionService.createSession(cvText, jobText, questions);
 
+        model.addAttribute("sessionId", session.getId());
         model.addAttribute("cvText", cvText);
         model.addAttribute("jobText", jobText);
         model.addAttribute("questions", questions);
