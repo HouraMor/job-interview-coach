@@ -63,7 +63,7 @@ InterviewSession
        -> AnswerAttempt
 ```
 
-Generated questions are now saved as a new `InterviewSession` with ordered `InterviewQuestion` records. Answers and feedback are not persisted yet, and a session history page is not implemented.
+Generated questions are saved as a new `InterviewSession` with ordered `InterviewQuestion` records. Each submitted answer and its AI feedback are saved as an `AnswerAttempt` linked to the selected question. A session history page is still not implemented.
 
 ## Run Locally
 

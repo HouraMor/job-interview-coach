@@ -11,7 +11,7 @@
     <div class="card">
         <h2>Questions</h2>
         <ol>
-            <li th:each="question : ${questions}" th:text="${question}"></li>
+            <li th:each="question : ${questions}" th:text="${question.text}"></li>
         </ol>
     </div>
 
@@ -19,14 +19,13 @@
         <h2>Answer One Question</h2>
 
         <form th:action="@{/feedback}" method="post">
-            <input type="hidden" name="cvText" th:value="${cvText}">
-            <input type="hidden" name="jobText" th:value="${jobText}">
+            <input type="hidden" name="sessionId" th:value="${sessionId}">
 
-            <label for="selectedQuestion">Select a question</label>
-            <select id="selectedQuestion" name="selectedQuestion" required>
-                <option th:each="question, iterStat : ${questions}"
-                        th:value="${question}"
-                        th:text="'Question ' + ${iterStat.count}">
+            <label for="questionId">Select a question</label>
+            <select id="questionId" name="questionId" required>
+                <option th:each="question : ${questions}"
+                        th:value="${question.id}"
+                        th:text="'Question ' + ${question.position}">
                 </option>
             </select>
 
