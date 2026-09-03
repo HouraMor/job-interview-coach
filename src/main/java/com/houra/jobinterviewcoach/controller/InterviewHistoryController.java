@@ -5,6 +5,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
 public class InterviewHistoryController {
@@ -25,5 +26,11 @@ public class InterviewHistoryController {
     public String showSession(@PathVariable Long sessionId, Model model) {
         model.addAttribute("session", interviewHistoryService.getSession(sessionId));
         return "history-detail";
+    }
+
+    @PostMapping("/history/{sessionId}/delete")
+    public String deleteSession(@PathVariable Long sessionId) {
+        interviewHistoryService.deleteSession(sessionId);
+        return "redirect:/history";
     }
 }

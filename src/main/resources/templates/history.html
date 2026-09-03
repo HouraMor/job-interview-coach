@@ -23,6 +23,10 @@
 
     <div class="card">
         <a th:href="@{/}">Back to home</a>
+        <span> · </span>
+        <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit">Log out</button>
+        </form>
     </div>
 </div>
 </body>

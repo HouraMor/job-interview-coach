@@ -73,6 +73,20 @@ class InterviewHistoryControllerTests {
         assertEquals(HttpStatus.NOT_FOUND, responseStatus.value());
     }
 
+    @Test
+    void deleteSessionDelegatesToTheServiceAndRedirectsToHistory() {
+        RecordingInterviewHistoryService historyService = new RecordingInterviewHistoryService(
+                List.of(),
+                sessionDetail()
+        );
+        InterviewHistoryController controller = new InterviewHistoryController(historyService);
+
+        String viewName = controller.deleteSession(42L);
+
+        assertEquals("redirect:/history", viewName);
+        assertEquals(42L, historyService.receivedSessionId);
+    }
+
     private InterviewSessionHistoryView sessionDetail() {
         AnswerAttemptHistoryView attempt = new AnswerAttemptHistoryView(
                 301L,
@@ -127,6 +141,14 @@ class InterviewHistoryControllerTests {
                 throw new InterviewSessionNotFoundException(sessionId);
             }
             return session;
+        }
+
+        @Override
+        public void deleteSession(Long sessionId) {
+            receivedSessionId = sessionId;
+            if (session == null) {
+                throw new InterviewSessionNotFoundException(sessionId);
+            }
         }
     }
 }

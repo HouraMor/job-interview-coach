@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -159,6 +160,44 @@ class InterviewHistoryServiceTests {
         InterviewSessionNotFoundException exception = assertThrows(
                 InterviewSessionNotFoundException.class,
                 () -> historyService.getSession(Long.MAX_VALUE)
+        );
+
+        assertEquals("Interview session not found: " + Long.MAX_VALUE, exception.getMessage());
+    }
+
+    @Test
+    void deletesSessionQuestionsAndAnswerAttempts() {
+        InterviewSession session = new InterviewSession("CV to delete", "Job to delete");
+        InterviewQuestion firstQuestion = new InterviewQuestion("First question", 1);
+        InterviewQuestion secondQuestion = new InterviewQuestion("Second question", 2);
+        firstQuestion.addAnswerAttempt(answerAttempt("First answer"));
+        firstQuestion.addAnswerAttempt(answerAttempt("Second answer"));
+        secondQuestion.addAnswerAttempt(answerAttempt("Third answer"));
+        session.addQuestion(firstQuestion);
+        session.addQuestion(secondQuestion);
+        persistSession(session);
+
+        Long sessionId = session.getId();
+        List<Long> questionIds = session.getQuestions().stream()
+                .map(InterviewQuestion::getId)
+                .toList();
+        List<Long> attemptIds = session.getQuestions().stream()
+                .flatMap(question -> question.getAnswerAttempts().stream())
+                .map(AnswerAttempt::getId)
+                .toList();
+
+        historyService.deleteSession(sessionId);
+
+        assertFalse(sessionRepository.existsById(sessionId));
+        assertTrue(questionIds.stream().noneMatch(questionRepository::existsById));
+        assertTrue(attemptIds.stream().noneMatch(answerAttemptRepository::existsById));
+    }
+
+    @Test
+    void rejectsDeletingUnknownSessionId() {
+        InterviewSessionNotFoundException exception = assertThrows(
+                InterviewSessionNotFoundException.class,
+                () -> historyService.deleteSession(Long.MAX_VALUE)
         );
 
         assertEquals("Interview session not found: " + Long.MAX_VALUE, exception.getMessage());

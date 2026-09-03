@@ -70,6 +70,14 @@ public class InterviewHistoryService {
         );
     }
 
+    @Transactional
+    public void deleteSession(Long sessionId) {
+        InterviewSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new InterviewSessionNotFoundException(sessionId));
+
+        sessionRepository.delete(session);
+    }
+
     private InterviewSessionSummaryView toSummaryView(InterviewSessionSummaryProjection summary) {
         return new InterviewSessionSummaryView(
                 summary.getId(),

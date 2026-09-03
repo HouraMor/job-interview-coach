@@ -48,9 +48,23 @@
     </div>
 
     <div class="card">
+        <h2>Delete this session</h2>
+        <p>This permanently deletes the session, its questions, answers, and feedback.</p>
+        <form th:action="@{/history/{sessionId}/delete(sessionId=${session.id})}"
+              method="post"
+              onsubmit="return confirm('Delete this session and all of its questions, answers, and feedback?');">
+            <button type="submit">Delete Session</button>
+        </form>
+    </div>
+
+    <div class="card">
         <a th:href="@{/history}">Back to history</a>
         <span> · </span>
         <a th:href="@{/}">Back to home</a>
+        <span> · </span>
+        <form th:action="@{/logout}" method="post" style="display: inline">
+            <button type="submit">Log out</button>
+        </form>
     </div>
 </div>
 </body>
