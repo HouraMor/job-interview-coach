@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Interview Session History</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Interview Session</h1>
+    <p>
+        Created
+        <time th:datetime="${session.createdAt}"
+              th:text="${#temporals.format(session.createdAt, 'MMMM d, yyyy, HH:mm')}">Session date</time>
+    </p>
+
+    <div class="card">
+        <h2>Session Context</h2>
+        <details>
+            <summary>CV used for this session</summary>
+            <p th:text="${session.cvText}"></p>
+        </details>
+        <details>
+            <summary>Job description used for this session</summary>
+            <p th:text="${session.jobText}"></p>
+        </details>
+    </div>
+
+    <div class="card" th:each="question : ${session.questions}">
+        <h2 th:text="'Question ' + ${question.position}">Question</h2>
+        <p th:text="${question.questionText}">Question text</p>
+
+        <p th:if="${#lists.isEmpty(question.attempts)}"><em>Not answered yet.</em></p>
+
+        <section th:each="attempt, attemptStatus : ${question.attempts}">
+            <hr th:if="${!attemptStatus.first}">
+            <h3 th:text="'Attempt ' + ${attemptStatus.count}">Attempt</h3>
+            <p>
+                <strong>Submitted:</strong>
+                <time th:datetime="${attempt.createdAt}"
+                      th:text="${#temporals.format(attempt.createdAt, 'MMMM d, yyyy, HH:mm')}">Attempt date</time>
+            </p>
+            <p><strong>Answer:</strong> <span th:text="${attempt.userAnswer}"></span></p>
+            <p><strong>Score:</strong> <span th:text="${attempt.score}"></span></p>
+            <p><strong>Strengths:</strong> <span th:text="${attempt.strengths}"></span></p>
+            <p><strong>Missing Points:</strong> <span th:text="${attempt.missingPoints}"></span></p>
+            <p><strong>Improvement Tips:</strong> <span th:text="${attempt.improvementTips}"></span></p>
+        </section>
+    </div>
+
+    <div class="card">
+        <a th:href="@{/history}">Back to history</a>
+        <span> · </span>
+        <a th:href="@{/}">Back to home</a>
+    </div>
+</div>
+</body>
+</html>

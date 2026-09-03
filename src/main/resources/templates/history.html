@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Interview History</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Interview History</h1>
+    <p>Review your previously generated interview sessions and feedback.</p>
+
+    <div class="card" th:if="${#lists.isEmpty(sessions)}">
+        <p>No interview sessions yet.</p>
+    </div>
+
+    <div class="card" th:each="session : ${sessions}">
+        <h2 th:text="${#temporals.format(session.createdAt, 'MMMM d, yyyy, HH:mm')}">Session date</h2>
+        <p><strong>Questions:</strong> <span th:text="${session.questionCount}">0</span></p>
+        <p><strong>Answered:</strong> <span th:text="${session.answeredQuestionCount}">0</span></p>
+        <p><strong>Answer attempts:</strong> <span th:text="${session.answerAttemptCount}">0</span></p>
+        <a th:href="@{/history/{sessionId}(sessionId=${session.id})}">View session</a>
+    </div>
+
+    <div class="card">
+        <a th:href="@{/}">Back to home</a>
+    </div>
+</div>
+</body>
+</html>

@@ -8,6 +8,7 @@
 <div class="container">
     <h1>Job Interview Coach</h1>
     <p>Paste text or upload a text-based PDF for both your CV and the job description.</p>
+    <p><a th:href="@{/history}">View interview history</a></p>
 
     <p class="error-message" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></p>
 

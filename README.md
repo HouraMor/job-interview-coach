@@ -9,6 +9,7 @@ A lightweight AI-powered web application that helps users prepare for interviews
 - Includes technical and role-specific questions
 - Submit your own answer to a selected question
 - Receive AI-generated feedback on your answer
+- Review persisted sessions, questions, answers, and feedback in a read-only history
 - Fallback dummy mode if no API key is configured
 
 ## Security
@@ -63,7 +64,7 @@ InterviewSession
        -> AnswerAttempt
 ```
 
-Generated questions are saved as a new `InterviewSession` with ordered `InterviewQuestion` records. Each submitted answer and its AI feedback are saved as an `AnswerAttempt` linked to the selected question. A session history page is still not implemented.
+Generated questions are saved as a new `InterviewSession` with ordered `InterviewQuestion` records. Each submitted answer and its AI feedback are saved as an `AnswerAttempt` linked to the selected question. A read-only session overview and detail view are available at `/history`; editing and deleting sessions are not implemented.
 
 ## Run Locally
 
@@ -114,7 +115,9 @@ http://localhost:8080
 ---
 
 ## Future Improvements
-- [ ] Add an interview session history page
+- [x] Add a read-only interview session history
+
+- [ ] Delete sessions and add retention controls
 
 - [ ] Better UI for question selection
 
