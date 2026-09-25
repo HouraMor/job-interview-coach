@@ -4,19 +4,27 @@ import com.houra.jobinterviewcoach.model.ChatCompletionRequest;
 import com.houra.jobinterviewcoach.model.ChatCompletionResponse;
 import com.houra.jobinterviewcoach.model.ChatMessage;
 import com.houra.jobinterviewcoach.model.FeedbackResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class AiService {
+
+    private static final Logger log = LoggerFactory.getLogger(AiService.class);
+    private static final String QUESTIONS_UNAVAILABLE =
+            "AI question generation is currently unavailable. Please try again later.";
+    private static final String FEEDBACK_UNAVAILABLE =
+            "AI feedback is currently unavailable. Please try again later.";
 
     private static final String SYSTEM_PROMPT = """
             You are an interview coaching system.
@@ -44,18 +52,16 @@ public class AiService {
 
     public List<String> generateQuestions(String cvText, String jobText) {
         if (apiKey == null || apiKey.isBlank()) {
-            return dummyQuestions();
+            log.warn("LLM question generation is unavailable because the API key is not configured.");
+            throw new AiServiceException(QUESTIONS_UNAVAILABLE);
         }
 
         try {
             String prompt = buildQuestionPrompt(cvText, jobText);
             String output = callModel(prompt);
 
-            System.out.println("QUESTION OUTPUT:");
-            System.out.println(output);
-
             if (output == null || output.isBlank()) {
-                return dummyQuestions();
+                throw new AiServiceException(QUESTIONS_UNAVAILABLE);
             }
 
             List<String> parsed = Arrays.stream(output.split("\\R"))
@@ -64,36 +70,49 @@ public class AiService {
                     .map(line -> line.replaceFirst("^[-*]\\s*", ""))
                     .map(line -> line.replaceFirst("^\\d+[.)]\\s*", ""))
                     .filter(line -> !line.isBlank())
-                    .limit(10)
-                    .collect(Collectors.toList());
+                    .toList();
 
-            return parsed.isEmpty() ? dummyQuestions() : parsed;
+            if (parsed.size() != 10) {
+                throw new AiServiceException(QUESTIONS_UNAVAILABLE);
+            }
+
+            return parsed;
+        } catch (AiServiceException e) {
+            log.warn("LLM question generation failed because the provider response was invalid.");
+            throw e;
+        } catch (RestClientResponseException e) {
+            log.warn("LLM question generation failed with HTTP status {}.", e.getStatusCode().value());
+            throw new AiServiceException(QUESTIONS_UNAVAILABLE, e);
         } catch (Exception e) {
-            e.printStackTrace();
-            return dummyQuestions();
+            log.warn("LLM question generation failed with error type {}.", e.getClass().getSimpleName());
+            throw new AiServiceException(QUESTIONS_UNAVAILABLE, e);
         }
     }
 
     public FeedbackResult analyzeAnswer(String cvText, String jobText, String question, String userAnswer) {
         if (apiKey == null || apiKey.isBlank()) {
-            return dummyFeedback();
+            log.warn("LLM feedback generation is unavailable because the API key is not configured.");
+            throw new AiServiceException(FEEDBACK_UNAVAILABLE);
         }
 
         try {
             String prompt = buildFeedbackPrompt(cvText, jobText, question, userAnswer);
             String output = callModel(prompt);
 
-            System.out.println("FEEDBACK OUTPUT:");
-            System.out.println(output);
-
             if (output == null || output.isBlank()) {
-                return dummyFeedback();
+                throw new AiServiceException(FEEDBACK_UNAVAILABLE);
             }
 
             return parseFeedback(output);
+        } catch (AiServiceException e) {
+            log.warn("LLM feedback generation failed because the provider response was invalid.");
+            throw e;
+        } catch (RestClientResponseException e) {
+            log.warn("LLM feedback generation failed with HTTP status {}.", e.getStatusCode().value());
+            throw new AiServiceException(FEEDBACK_UNAVAILABLE, e);
         } catch (Exception e) {
-            e.printStackTrace();
-            return dummyFeedback();
+            log.warn("LLM feedback generation failed with error type {}.", e.getClass().getSimpleName());
+            throw new AiServiceException(FEEDBACK_UNAVAILABLE, e);
         }
     }
 
@@ -202,30 +221,6 @@ public class AiService {
                 .replace(">", "&gt;");
     }
 
-    private List<String> dummyQuestions() {
-        return List.of(
-                "Tell me about yourself.",
-                "Why are you interested in this role?",
-                "Which of your past projects is most relevant for this position?",
-                "What experience do you have with Java and backend development?",
-                "Why should we hire you for this role?",
-                "What is the difference between a REST API and a traditional web application?",
-                "How would you structure a Spring Boot project?",
-                "What is the difference between GET and POST requests?",
-                "How would you design a simple backend service for storing user data?",
-                "What is the purpose of Docker in modern software development?"
-        );
-    }
-
-    private FeedbackResult dummyFeedback() {
-        FeedbackResult result = new FeedbackResult();
-        result.setScore("7/10");
-        result.setStrengths("Clear motivation and relevant technical keywords.");
-        result.setMissingPoints("More concrete project examples and a stronger link to the job description.");
-        result.setImprovementTips("Mention one relevant project, one technical skill, and explain why you fit this role.");
-        return result;
-    }
-
     private FeedbackResult parseFeedback(String text) {
         FeedbackResult result = new FeedbackResult();
 
@@ -249,17 +244,11 @@ public class AiService {
             }
         }
 
-        if (result.getScore() == null || result.getScore().isBlank()) {
-            result.setScore("7/10");
-        }
-        if (result.getStrengths() == null || result.getStrengths().isBlank()) {
-            result.setStrengths("Relevant points were mentioned.");
-        }
-        if (result.getMissingPoints() == null || result.getMissingPoints().isBlank()) {
-            result.setMissingPoints("More concrete examples would improve the answer.");
-        }
-        if (result.getImprovementTips() == null || result.getImprovementTips().isBlank()) {
-            result.setImprovementTips("Add one project example and connect it more directly to the role.");
+        if (result.getScore() == null || result.getScore().isBlank()
+                || result.getStrengths() == null || result.getStrengths().isBlank()
+                || result.getMissingPoints() == null || result.getMissingPoints().isBlank()
+                || result.getImprovementTips() == null || result.getImprovementTips().isBlank()) {
+            throw new AiServiceException(FEEDBACK_UNAVAILABLE);
         }
 
         return result;

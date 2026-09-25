@@ -7,7 +7,9 @@ import com.houra.jobinterviewcoach.model.InterviewQuestionView;
 import com.houra.jobinterviewcoach.persistence.entity.InterviewQuestion;
 import com.houra.jobinterviewcoach.persistence.entity.InterviewSession;
 import com.houra.jobinterviewcoach.service.AiService;
+import com.houra.jobinterviewcoach.service.AiServiceException;
 import com.houra.jobinterviewcoach.service.InterviewFeedbackService;
+import com.houra.jobinterviewcoach.service.InterviewInputValidator;
 import com.houra.jobinterviewcoach.service.InterviewSessionService;
 import com.houra.jobinterviewcoach.service.PdfTextExtractor;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PageControllerTests {
 
@@ -30,7 +33,9 @@ class PageControllerTests {
         RecordingPdfTextExtractor pdfTextExtractor = new RecordingPdfTextExtractor("Extracted PDF text");
         RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
         RecordingInterviewFeedbackService feedbackService = new RecordingInterviewFeedbackService();
-        PageController pageController = new PageController(aiService, pdfTextExtractor, sessionService, feedbackService);
+        PageController pageController = new PageController(
+                aiService, pdfTextExtractor, sessionService, feedbackService, defaultInputValidator()
+        );
         InterviewForm form = new InterviewForm();
         form.setCvText("Pasted CV text");
         form.setJobText("Job description");
@@ -64,7 +69,9 @@ class PageControllerTests {
         RecordingPdfTextExtractor pdfTextExtractor = new RecordingPdfTextExtractor("Extracted PDF text");
         RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
         RecordingInterviewFeedbackService feedbackService = new RecordingInterviewFeedbackService();
-        PageController pageController = new PageController(aiService, pdfTextExtractor, sessionService, feedbackService);
+        PageController pageController = new PageController(
+                aiService, pdfTextExtractor, sessionService, feedbackService, defaultInputValidator()
+        );
         InterviewForm form = new InterviewForm();
         form.setCvText("Pasted CV text");
         form.setJobText("Job description");
@@ -100,7 +107,9 @@ class PageControllerTests {
         RecordingPdfTextExtractor pdfTextExtractor = new RecordingPdfTextExtractor("Extracted job PDF text");
         RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
         RecordingInterviewFeedbackService feedbackService = new RecordingInterviewFeedbackService();
-        PageController pageController = new PageController(aiService, pdfTextExtractor, sessionService, feedbackService);
+        PageController pageController = new PageController(
+                aiService, pdfTextExtractor, sessionService, feedbackService, defaultInputValidator()
+        );
         InterviewForm form = new InterviewForm();
         form.setCvText("Pasted CV text");
         form.setJobText("Pasted job description");
@@ -139,7 +148,9 @@ class PageControllerTests {
             }
         };
         RecordingInterviewFeedbackService feedbackService = new RecordingInterviewFeedbackService();
-        PageController pageController = new PageController(aiService, pdfTextExtractor, sessionService, feedbackService);
+        PageController pageController = new PageController(
+                aiService, pdfTextExtractor, sessionService, feedbackService, defaultInputValidator()
+        );
         InterviewForm form = new InterviewForm();
         form.setJobText("Job description");
         MockMultipartFile file = new MockMultipartFile(
@@ -175,7 +186,8 @@ class PageControllerTests {
                 aiService,
                 pdfTextExtractor,
                 sessionService,
-                feedbackService
+                feedbackService,
+                defaultInputValidator()
         );
         Model model = new ExtendedModelMap();
 
@@ -193,6 +205,153 @@ class PageControllerTests {
         assertEquals(feedback, model.getAttribute("feedback"));
         assertNull(model.getAttribute("cvText"));
         assertNull(model.getAttribute("jobText"));
+    }
+
+    @Test
+    void oversizedCvTextIsRejectedBeforeAiOrPersistence() {
+        RecordingAiService aiService = new RecordingAiService();
+        RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
+        PageController pageController = new PageController(
+                aiService,
+                new RecordingPdfTextExtractor("Unused"),
+                sessionService,
+                new RecordingInterviewFeedbackService(),
+                new InterviewInputValidator(5, 100, 100, 100)
+        );
+        InterviewForm form = new InterviewForm();
+        form.setCvText("123456");
+        form.setJobText("Job");
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> pageController.generateQuestions(form, null, null, new ExtendedModelMap())
+        );
+
+        assertEquals("CV text is too long. Maximum length is 5 characters.", exception.getMessage());
+        assertNull(aiService.receivedCvText);
+        assertNull(sessionService.receivedCvText);
+    }
+
+    @Test
+    void oversizedJobTextIsRejectedBeforeAiOrPersistence() {
+        RecordingAiService aiService = new RecordingAiService();
+        RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
+        PageController pageController = new PageController(
+                aiService,
+                new RecordingPdfTextExtractor("Unused"),
+                sessionService,
+                new RecordingInterviewFeedbackService(),
+                new InterviewInputValidator(100, 5, 100, 100)
+        );
+        InterviewForm form = new InterviewForm();
+        form.setCvText("CV");
+        form.setJobText("123456");
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> pageController.generateQuestions(form, null, null, new ExtendedModelMap())
+        );
+
+        assertEquals("Job description is too long. Maximum length is 5 characters.", exception.getMessage());
+        assertNull(aiService.receivedJobText);
+        assertNull(sessionService.receivedJobText);
+    }
+
+    @Test
+    void oversizedPdfIsRejectedBeforeExtractionOrAi() {
+        RecordingAiService aiService = new RecordingAiService();
+        RecordingPdfTextExtractor pdfTextExtractor = new RecordingPdfTextExtractor("Unused");
+        RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
+        PageController pageController = new PageController(
+                aiService,
+                pdfTextExtractor,
+                sessionService,
+                new RecordingInterviewFeedbackService(),
+                new InterviewInputValidator(100, 100, 100, 1)
+        );
+        InterviewForm form = new InterviewForm();
+        form.setJobText("Job");
+        MockMultipartFile file = new MockMultipartFile(
+                "cvFile",
+                "cv.pdf",
+                MediaType.APPLICATION_PDF_VALUE,
+                new byte[]{1, 2}
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> pageController.generateQuestions(form, file, null, new ExtendedModelMap())
+        );
+
+        assertEquals("The uploaded PDF is too large. Maximum file size is 1 byte.", exception.getMessage());
+        assertNull(pdfTextExtractor.receivedFile);
+        assertNull(aiService.receivedCvText);
+        assertNull(sessionService.receivedCvText);
+    }
+
+    @Test
+    void oversizedExtractedPdfTextIsRejectedBeforeAiOrPersistence() {
+        RecordingAiService aiService = new RecordingAiService();
+        RecordingPdfTextExtractor pdfTextExtractor = new RecordingPdfTextExtractor("123456");
+        RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
+        PageController pageController = new PageController(
+                aiService,
+                pdfTextExtractor,
+                sessionService,
+                new RecordingInterviewFeedbackService(),
+                new InterviewInputValidator(5, 100, 100, 100)
+        );
+        InterviewForm form = new InterviewForm();
+        form.setJobText("Job");
+        MockMultipartFile file = new MockMultipartFile(
+                "cvFile",
+                "cv.pdf",
+                MediaType.APPLICATION_PDF_VALUE,
+                new byte[]{1}
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> pageController.generateQuestions(form, file, null, new ExtendedModelMap())
+        );
+
+        assertEquals("CV text is too long. Maximum length is 5 characters.", exception.getMessage());
+        assertEquals(file, pdfTextExtractor.receivedFile);
+        assertNull(aiService.receivedCvText);
+        assertNull(sessionService.receivedCvText);
+    }
+
+    @Test
+    void aiFailureDoesNotCreateAnInterviewSession() {
+        AiService failingAiService = new AiService("http://localhost") {
+            @Override
+            public List<String> generateQuestions(String cvText, String jobText) {
+                throw new AiServiceException("AI question generation is currently unavailable. Please try again later.");
+            }
+        };
+        RecordingInterviewSessionService sessionService = new RecordingInterviewSessionService();
+        PageController pageController = new PageController(
+                failingAiService,
+                new RecordingPdfTextExtractor("Unused"),
+                sessionService,
+                new RecordingInterviewFeedbackService(),
+                defaultInputValidator()
+        );
+        InterviewForm form = new InterviewForm();
+        form.setCvText("CV");
+        form.setJobText("Job");
+
+        assertThrows(
+                AiServiceException.class,
+                () -> pageController.generateQuestions(form, null, null, new ExtendedModelMap())
+        );
+
+        assertNull(sessionService.receivedCvText);
+        assertNull(sessionService.receivedQuestions);
+    }
+
+    private static InterviewInputValidator defaultInputValidator() {
+        return new InterviewInputValidator(20_000, 20_000, 10_000, 5L * 1024L * 1024L);
     }
 
     private static class RecordingAiService extends AiService {
@@ -261,7 +420,7 @@ class PageControllerTests {
         }
 
         RecordingInterviewFeedbackService(InterviewFeedbackResult result) {
-            super(null, null, null, null, null);
+            super(null, null, null, null, null, defaultInputValidator());
             this.result = result;
         }
 

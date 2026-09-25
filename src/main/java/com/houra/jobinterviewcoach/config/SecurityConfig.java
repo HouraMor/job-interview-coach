@@ -21,9 +21,10 @@ public class SecurityConfig {
         return http
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, "/", "/style.css", "/favicon.ico").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/questions", "/feedback").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/history", "/history/**").authenticated()
+                        .requestMatchers("/history", "/history/**").hasRole("ADMIN")
                         .anyRequest().denyAll()
                 )
                 .formLogin(form -> form

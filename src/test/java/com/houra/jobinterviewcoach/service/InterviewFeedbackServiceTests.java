@@ -43,6 +43,9 @@ class InterviewFeedbackServiceTests {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+    @Autowired
+    private InterviewInputValidator inputValidator;
+
     private RecordingAiService aiService;
     private InterviewFeedbackService feedbackService;
 
@@ -54,7 +57,8 @@ class InterviewFeedbackServiceTests {
                 sessionRepository,
                 questionRepository,
                 answerAttemptRepository,
-                transactionTemplate
+                transactionTemplate,
+                inputValidator
         );
     }
 
@@ -172,6 +176,63 @@ class InterviewFeedbackServiceTests {
         assertEquals("Answer must not be blank.", nullAnswerException.getMessage());
         assertEquals("Answer must not be blank.", blankAnswerException.getMessage());
         assertEquals(0, aiService.callCount);
+    }
+
+    @Test
+    void rejectsOversizedAnswerBeforeCallingAiOrPersistingAnAttempt() {
+        InterviewSession session = createSession("CV", "Job", "Question");
+        Long questionId = session.getQuestions().get(0).getId();
+        long attemptsBefore = answerAttemptRepository.count();
+        InterviewFeedbackService sizeLimitedService = new InterviewFeedbackService(
+                aiService,
+                sessionRepository,
+                questionRepository,
+                answerAttemptRepository,
+                transactionTemplate,
+                new InterviewInputValidator(100, 100, 5, 100)
+        );
+
+        InputLimitExceededException exception = assertThrows(
+                InputLimitExceededException.class,
+                () -> sizeLimitedService.evaluateAndSave(session.getId(), questionId, "123456")
+        );
+
+        assertEquals("Answer is too long. Maximum length is 5 characters.", exception.getMessage());
+        assertEquals(0, aiService.callCount);
+        assertEquals(attemptsBefore, answerAttemptRepository.count());
+    }
+
+    @Test
+    void aiFailureDoesNotPersistAnAnswerAttempt() {
+        InterviewSession session = createSession("CV", "Job", "Question");
+        Long questionId = session.getQuestions().get(0).getId();
+        long attemptsBefore = answerAttemptRepository.count();
+        AiService failingAiService = new AiService("http://localhost") {
+            @Override
+            public FeedbackResult analyzeAnswer(
+                    String cvText,
+                    String jobText,
+                    String question,
+                    String userAnswer
+            ) {
+                throw new AiServiceException("AI feedback is currently unavailable. Please try again later.");
+            }
+        };
+        InterviewFeedbackService failingService = new InterviewFeedbackService(
+                failingAiService,
+                sessionRepository,
+                questionRepository,
+                answerAttemptRepository,
+                transactionTemplate,
+                inputValidator
+        );
+
+        assertThrows(
+                AiServiceException.class,
+                () -> failingService.evaluateAndSave(session.getId(), questionId, "Answer")
+        );
+
+        assertEquals(attemptsBefore, answerAttemptRepository.count());
     }
 
     private InterviewSession createSession(String cvText, String jobText, String questionText) {

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AiServicePromptTests {
@@ -63,6 +64,32 @@ class AiServicePromptTests {
         assertEquals(answer, sectionContent(prompt, "CANDIDATE_ANSWER_DATA"));
         assertTrue(prompt.indexOf("Return your answer in exactly this format")
                 < prompt.indexOf("<INTERVIEW_QUESTION_DATA>"));
+    }
+
+    @Test
+    void missingApiKeyDoesNotReturnFallbackQuestions() {
+        AiServiceException exception = assertThrows(
+                AiServiceException.class,
+                () -> aiService.generateQuestions("CV", "Job description")
+        );
+
+        assertEquals(
+                "AI question generation is currently unavailable. Please try again later.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void missingApiKeyDoesNotReturnFallbackFeedback() {
+        AiServiceException exception = assertThrows(
+                AiServiceException.class,
+                () -> aiService.analyzeAnswer("CV", "Job description", "Question", "Answer")
+        );
+
+        assertEquals(
+                "AI feedback is currently unavailable. Please try again later.",
+                exception.getMessage()
+        );
     }
 
     private String sectionContent(String prompt, String sectionName) {

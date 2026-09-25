@@ -21,19 +21,22 @@ public class InterviewFeedbackService {
     private final InterviewQuestionRepository questionRepository;
     private final AnswerAttemptRepository answerAttemptRepository;
     private final TransactionTemplate transactionTemplate;
+    private final InterviewInputValidator inputValidator;
 
     public InterviewFeedbackService(
             AiService aiService,
             InterviewSessionRepository sessionRepository,
             InterviewQuestionRepository questionRepository,
             AnswerAttemptRepository answerAttemptRepository,
-            TransactionTemplate transactionTemplate
+            TransactionTemplate transactionTemplate,
+            InterviewInputValidator inputValidator
     ) {
         this.aiService = aiService;
         this.sessionRepository = sessionRepository;
         this.questionRepository = questionRepository;
         this.answerAttemptRepository = answerAttemptRepository;
         this.transactionTemplate = transactionTemplate;
+        this.inputValidator = inputValidator;
     }
 
     public InterviewFeedbackResult evaluateAndSave(
@@ -46,6 +49,8 @@ public class InterviewFeedbackService {
         FeedbackContext context = Objects.requireNonNull(
                 transactionTemplate.execute(status -> loadContext(sessionId, questionId))
         );
+        inputValidator.validateCvText(context.cvText());
+        inputValidator.validateJobText(context.jobText());
 
         FeedbackResult feedback = aiService.analyzeAnswer(
                 context.cvText(),
@@ -73,6 +78,7 @@ public class InterviewFeedbackService {
         if (userAnswer == null || userAnswer.isBlank()) {
             throw new IllegalArgumentException("Answer must not be blank.");
         }
+        inputValidator.validateAnswer(userAnswer);
     }
 
     private FeedbackContext loadContext(Long sessionId, Long questionId) {

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Request Could Not Be Completed</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Request Could Not Be Completed</h1>
+    <p class="error-message" role="alert" th:text="${errorMessage}">Please try again later.</p>
+
+    <div class="card">
+        <a th:href="@{/}">Back to home</a>
+    </div>
+</div>
+</body>
+</html>

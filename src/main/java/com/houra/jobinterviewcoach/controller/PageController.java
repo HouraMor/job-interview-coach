@@ -5,7 +5,9 @@ import com.houra.jobinterviewcoach.model.InterviewForm;
 import com.houra.jobinterviewcoach.model.InterviewQuestionView;
 import com.houra.jobinterviewcoach.persistence.entity.InterviewSession;
 import com.houra.jobinterviewcoach.service.AiService;
+import com.houra.jobinterviewcoach.service.InputLimitExceededException;
 import com.houra.jobinterviewcoach.service.InterviewFeedbackService;
+import com.houra.jobinterviewcoach.service.InterviewInputValidator;
 import com.houra.jobinterviewcoach.service.InterviewSessionService;
 import com.houra.jobinterviewcoach.service.PdfTextExtractor;
 import org.springframework.stereotype.Controller;
@@ -22,17 +24,20 @@ public class PageController {
     private final PdfTextExtractor pdfTextExtractor;
     private final InterviewSessionService interviewSessionService;
     private final InterviewFeedbackService interviewFeedbackService;
+    private final InterviewInputValidator inputValidator;
 
     public PageController(
             AiService aiService,
             PdfTextExtractor pdfTextExtractor,
             InterviewSessionService interviewSessionService,
-            InterviewFeedbackService interviewFeedbackService
+            InterviewFeedbackService interviewFeedbackService,
+            InterviewInputValidator inputValidator
     ) {
         this.aiService = aiService;
         this.pdfTextExtractor = pdfTextExtractor;
         this.interviewSessionService = interviewSessionService;
         this.interviewFeedbackService = interviewFeedbackService;
+        this.inputValidator = inputValidator;
     }
 
     @GetMapping("/")
@@ -53,11 +58,15 @@ public class PageController {
 
         try {
             if (wasFileSelected(cvFile)) {
+                inputValidator.validatePdf(cvFile);
                 cvText = pdfTextExtractor.extractText(cvFile);
             }
             if (wasFileSelected(jobFile)) {
+                inputValidator.validatePdf(jobFile);
                 jobText = pdfTextExtractor.extractText(jobFile);
             }
+        } catch (InputLimitExceededException e) {
+            throw e;
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());
             model.addAttribute("interviewForm", interviewForm);
@@ -75,6 +84,9 @@ public class PageController {
             model.addAttribute("interviewForm", interviewForm);
             return "index";
         }
+
+        inputValidator.validateCvText(cvText);
+        inputValidator.validateJobText(jobText);
 
         List<String> questions = aiService.generateQuestions(
                 cvText,
